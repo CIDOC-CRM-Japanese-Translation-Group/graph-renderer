@@ -115,6 +115,20 @@ uvicorn api:app --reload --port 8001
 
 ---
 
+## FAQ
+
+### Graphviz 出力で日本語が文字化けする
+
+サーバに日本語フォントが入っていない場合に発生します。以下でインストールしてください。
+
+```bash
+sudo apt-get install -y fonts-noto-cjk
+fc-cache -fv
+sudo systemctl restart crmviz-api
+```
+
+---
+
 ## ファイル構成
 
 ```
@@ -135,7 +149,6 @@ graph-renderer/
 ├── server/            # FastAPI バックエンド
 │   ├── api.py
 │   ├── dsl_to_graphviz_svg.py
-│   ├── graph_to_pptx.py
 │   └── requirements.txt
 └── deploy/            # デプロイ用スクリプト・設定
     ├── deploy.sh
