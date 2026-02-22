@@ -2,8 +2,8 @@
 
 CIDOC-CRM グラフを DSL で記述し、ブラウザ上でレイアウト・表示するツールです。
 
-- **frontend/** — Svelte + Vite 製の SPA。ELK によるグラフレイアウト、SVG / draw.io XML のエクスポート
-- **server/** — FastAPI 製のバックエンド。Graphviz による SVG/PNG 出力、PPTX 生成
+- **frontend/** — Svelte + Vite 製の SPA。ELK によるグラフレイアウト、SVG エクスポート、Google Sheets 連携
+- **server/** — FastAPI 製のバックエンド。Graphviz による SVG/PNG 出力
 
 ---
 
@@ -140,7 +140,6 @@ graph-renderer/
 │   │   ├── Editor.svelte
 │   │   ├── Label.svelte
 │   │   └── lib/
-│   │       ├── exportDrawio.ts
 │   │       ├── layoutElk.ts
 │   │       ├── parseDsl.ts
 │   │       └── types.ts
@@ -150,6 +149,9 @@ graph-renderer/
 │   ├── api.py
 │   ├── dsl_to_graphviz_svg.py
 │   └── requirements.txt
+├── docs/              # フォーマット解説
+│   ├── dsl.md
+│   └── google-sheets.md
 └── deploy/            # デプロイ用スクリプト・設定
     ├── deploy.sh
     ├── update.sh
