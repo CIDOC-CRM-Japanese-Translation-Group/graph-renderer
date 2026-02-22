@@ -162,6 +162,12 @@ E22 -> E55 : P2 has type
         Graphviz PNG
       </button>
 
+      <span style="margin-left:auto; display:flex; gap:10px; align-items:center; font-size:0.85rem;">
+        <a href="https://github.com/CIDOC-CRM-Japanese-Translation-Group/graph-renderer/blob/main/docs/dsl.md" target="_blank" rel="noopener">DSL</a>
+        <a href="https://github.com/CIDOC-CRM-Japanese-Translation-Group/graph-renderer/blob/main/docs/google-sheets.md" target="_blank" rel="noopener">Google Sheets</a>
+        <a href="https://github.com/CIDOC-CRM-Japanese-Translation-Group/graph-renderer" target="_blank" rel="noopener">GitHub</a>
+      </span>
+
     </div>
 
     <div style="flex:1; min-height:0;">
