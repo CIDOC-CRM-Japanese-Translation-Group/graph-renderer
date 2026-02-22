@@ -2,8 +2,24 @@ import ELK from 'elkjs/lib/elk.bundled.js';
 import type { Graph } from './types';
 const elk = new ELK();
 
+const _canvas = document.createElement('canvas');
+const _ctx = _canvas.getContext('2d')!;
+
+function measureText(text: string, font: string): number {
+  _ctx.font = font;
+  return _ctx.measureText(text).width;
+}
+
+function nodeSize(top: string, bottom?: string): { w: number; h: number } {
+  const PAD = 24;
+  const topW = measureText(top,     'bold 20px system-ui');
+  const botW = bottom ? measureText(bottom, '18px system-ui') : 0;
+  const w = Math.max(220, Math.ceil(Math.max(topW, botW)) + PAD);
+  const h = bottom ? 96 : 56;
+  return { w, h };
+}
+
 export async function layout(graph: Graph) {
-  const W = 220, H = 96;
 
   // まず入出次数を数える
   const outDeg = new Map<string, number>();
@@ -14,9 +30,11 @@ export async function layout(graph: Graph) {
   }
 
   // 各ノードに左右ポートを必要数だけ用意（yは指定しない＝ELKが分配）
+  const sizes = new Map(graph.nodes.map(n => [n.id, nodeSize(n.top, n.bottom)]));
   const children = graph.nodes.map(n => {
     const o = outDeg.get(n.id) ?? 0;
     const i = inDeg.get(n.id)  ?? 0;
+    const { w, h } = sizes.get(n.id)!;
     const ports: any[] = [];
     for (let k = 0; k < o; k++) {
       ports.push({
@@ -32,8 +50,8 @@ export async function layout(graph: Graph) {
     }
     return {
       id: n.id,
-      width: W,
-      height: H,
+      width: w,
+      height: h,
       ports,
       layoutOptions: {
         'elk.portConstraints': 'FIXED_SIDE'       // 側だけ固定、位置はELKに任せる
@@ -77,7 +95,11 @@ export async function layout(graph: Graph) {
 
   return {
     nodes: graph.nodes.map(n => ({
-      ...n, x: pos.get(n.id)?.x ?? 0, y: pos.get(n.id)?.y ?? 0, w: W, h: H
+      ...n,
+      x: pos.get(n.id)?.x ?? 0,
+      y: pos.get(n.id)?.y ?? 0,
+      w: sizes.get(n.id)!.w,
+      h: sizes.get(n.id)!.h,
     })),
     edges: graph.edges.map(e => edgeMap.get(e.id)).filter(Boolean)
   };
