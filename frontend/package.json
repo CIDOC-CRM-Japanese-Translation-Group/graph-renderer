@@ -1,0 +1,23 @@
+{
+  "name": "cidoc-viewer",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "elkjs": "^0.9.2",
+    "n3": "^1.17.3",
+    "pako": "^2.1.0",
+    "monaco-editor": "^0.45.0",
+    "svelte": "^5.0.0-next.3"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.2.0"
+  }
+}

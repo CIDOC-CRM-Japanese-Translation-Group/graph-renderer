@@ -1,0 +1,40 @@
+{
+  "nodes": [
+    {
+      "id": "E22_1",
+      "label": "E22 Human-Made Object | Vase 123",
+      "x": 100,
+      "y": 100,
+      "width": 220,
+      "height": 60
+    },
+    {
+      "id": "E42_1",
+      "label": "E42 Identifier | 123",
+      "x": 350,
+      "y": 80,
+      "width": 200,
+      "height": 60
+    },
+    {
+      "id": "E55_1",
+      "label": "E55 Type | Vase",
+      "x": 450,
+      "y": 130,
+      "width": 200,
+      "height": 60
+    }
+  ],
+  "edges": [
+    {
+      "from": "E22_1",
+      "to": "E42_1",
+      "label": "P1 is identified by"
+    },
+    {
+      "from": "E22_1",
+      "to": "E55_1",
+      "label": "P2 has type"
+    }
+  ]
+}
