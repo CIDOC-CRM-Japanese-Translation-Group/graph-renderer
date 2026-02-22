@@ -34,16 +34,7 @@
   }
   function onUp(){ panning = false; }
 
-  // ===== Edge label（交互オフセット） =====
-  let labelIdx = 0;
-  const nextDy = () => (labelIdx++ % 2 === 0 ? -8 : 14);
-  $: if (laidOut) labelIdx = 0;
-
-  const _lc = document.createElement('canvas').getContext('2d')!;
-  function labelWidth(text: string): number {
-    _lc.font = '14px system-ui';
-    return Math.max(120, Math.ceil(_lc.measureText(text).width) + 16);
-  }
+  // ===== Edge label =====
 
   // ===== Export: SVG をそのまま文字列化 =====
   export function toSVGString(): string {
@@ -125,14 +116,11 @@
               </g>
 
               <!-- ラベル：直線の中点 + 交互オフセット -->
-              {#if e.labels && e.labels.length}
-                {@const mx = (s.startPoint.x + s.endPoint.x) / 2}
-                {@const my = (s.startPoint.y + s.endPoint.y) / 2}
-                {@const dy = nextDy()}
-                {@const lw = labelWidth(e.labels[0].text)}
-                <rect x={mx - lw/2} y={my - 16 + dy} width={lw} height="20" rx="3" ry="3" fill="white" opacity="0.92"/>
-                <text x={mx} y={my - 2 + dy} font-size="14" text-anchor="middle" fill="#333">
-                  {e.labels[0].text}
+              {#if i === 0 && e.labels?.length}
+                {@const lb = e.labels[0]}
+                <rect x={lb.x} y={lb.y} width={lb.width} height={lb.height} rx="3" ry="3" fill="white" opacity="0.92"/>
+                <text x={lb.x + lb.width / 2} y={lb.y + 14} font-size="14" text-anchor="middle" fill="#333">
+                  {lb.text}
                 </text>
               {/if}
             {/if}

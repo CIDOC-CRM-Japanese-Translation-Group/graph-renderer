@@ -71,7 +71,12 @@ export async function layout(graph: Graph) {
       id: e.id,
       sources: [`${e.from}.E${oi}`],
       targets: [`${e.to}.W${ii}`],
-      labels: e.label ? [{ id: `${e.id}.label`, text: e.label }] : []
+      labels: e.label ? [{
+        id: `${e.id}.label`,
+        text: e.label,
+        width: Math.max(120, Math.ceil(measureText(e.label, '14px system-ui')) + 16),
+        height: 20,
+      }] : []
     };
   });
 
