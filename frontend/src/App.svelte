@@ -4,7 +4,9 @@
   import { parseDsl } from './lib/parseDsl';
   import { layout } from './lib/layoutElk';
   import { onMount } from 'svelte';
-  import { downloadDrawio } from './lib/exportDrawio';
+
+  // FastAPI 側のベースURL（必要に応じて書き換えてください）
+  const API_BASE = '/crmviz-api/api';
 
   let src = `crm {
 E22 "E22 Human-Made Object | Vase 123"
@@ -14,84 +16,206 @@ E22 -> E42 : P1 is identified by
 E22 -> E55 : P2 has type
 }`;
 
-  let graph = { nodes: [], edges: [] };
-  let laidOut: any;
+  // parseDsl の結果（id, top, bottom, edges[from/to/label]）
+  let graph: any = { nodes: [], edges: [] };
 
-  // Apply（反映）
+  // layoutElk の結果（nodes に x, y, w, h が付いたもの + ELK edges）
+  let laidOut: any;
+  let isLayouting = false;
+
+  // Canvas.svelte インスタンス（toSVGString() を呼ぶのに使う）
+  let canvasRef: any;
+
+  // DSL → Graph → ELK レイアウト
   async function update() {
     graph = parseDsl(src);
-    laidOut = await layout(graph);
+    isLayouting = true;
+    try {
+      laidOut = await layout(graph);
+    } catch (e) {
+      console.error('layout error', e);
+    } finally {
+      isLayouting = false;
+    }
   }
 
-  // --- SVG Download ---
-  let canvasRef: any; // Canvas.svelte のインスタンス参照
-  function downloadSVG() {
-    const svg = canvasRef?.toSVGString?.();
-    if (!svg) return;
-    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+  // 共通ダウンロードヘルパー
+  function triggerDownload(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'diagram.svg';
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
   }
 
-  // --- draw.io XML Download ---
-  function downloadDrawioXml() {
-    if (!laidOut) return;
-
-    const nodes = (laidOut.nodes ?? []).map((n: any, idx: number) => ({
-      id: n.id ?? String(idx + 1),
-      // draw.io 側では 1 行に入ってほしいので top / bottom をまとめる
-      label: n.bottom ? `${n.top} | ${n.bottom}` : n.top,
-      x: n.x ?? 0,
-      y: n.y ?? 0,
-      width: n.w ?? 220,
-      height: n.h ?? 96
-    }));
-
-    const edges = (laidOut.edges ?? []).map((e: any) => ({
-      from: e.from,          // layoutElk が from/to を持っている前提（違っていたらここだけ調整）
-      to: e.to,
-      label: e.labels?.[0]?.text ?? ''
-    }));
-
-    downloadDrawio({ nodes, edges }, 'crm-graph.drawio');
+  // 1. 画面に見えている SVG（ELK レイアウトのまま）
+  function downloadScreenSVG() {
+    const svg = canvasRef?.toSVGString?.();
+    if (!svg) return;
+    const blob = new Blob([svg], {
+      type: 'image/svg+xml;charset=utf-8'
+    });
+    triggerDownload(blob, 'cidoc-graph-screen.svg');
   }
 
-  onMount(update);
+  // 2. Graphviz SVG（DSL → Graphviz）
+  async function downloadGraphvizSvg() {
+    try {
+      const res = await fetch(`${API_BASE}/graphviz/svg`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dsl: src })
+      });
+      if (!res.ok) {
+        console.error('Graphviz SVG error', await res.text());
+        return;
+      }
+      const blob = await res.blob();
+      triggerDownload(blob, 'cidoc-graph-graphviz.svg');
+    } catch (e) {
+      console.error('Graphviz SVG error', e);
+    }
+  }
+
+  // 3. Graphviz PNG（DSL → Graphviz）
+  async function downloadGraphvizPng() {
+    try {
+      const res = await fetch(`${API_BASE}/graphviz/png`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dsl: src })
+      });
+      if (!res.ok) {
+        console.error('Graphviz PNG error', await res.text());
+        return;
+      }
+      const blob = await res.blob();
+      triggerDownload(blob, 'cidoc-graph-graphviz.png');
+    } catch (e) {
+      console.error('Graphviz PNG error', e);
+    }
+  }
+
+  // 4. PPTX（独自実装・Python 側 graph_to_pptx 用 JSON に整形）
+  async function downloadPptx() {
+    if (!laidOut) return;
+
+    // Python 側 sample.json の形式に合わせる:
+    // {
+    //   nodes: [{id, label, x, y, width, height}, ...],
+    //   edges: [{from, to, label}, ...]
+    // }
+    const pptxGraph = {
+      nodes: (laidOut.nodes ?? []).map((n: any) => ({
+        id: n.id,
+        label: n.bottom ? `${n.top} | ${n.bottom}` : n.top,
+        x: n.x,
+        y: n.y,
+        width: n.w,
+        height: n.h
+      })),
+      edges: (graph.edges ?? []).map((e: any) => ({
+        from: e.from,
+        to: e.to,
+        label: e.label
+      }))
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/pptx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pptxGraph)
+      });
+      if (!res.ok) {
+        console.error('PPTX error', await res.text());
+        return;
+      }
+      const blob = await res.blob();
+      triggerDownload(
+        blob,
+        'cidoc-graph.pptx'
+      );
+    } catch (e) {
+      console.error('PPTX error', e);
+    }
+  }
+
+  onMount(() => {
+    update();
+  });
 </script>
 
-<main style="display:flex; height:100vh; overflow:hidden;">
-  <!-- 左ペイン：ツールバー + エディタ -->
+<main
+  style="
+    display:flex;
+    height:100vh;
+    gap:8px;
+    padding:8px;
+    box-sizing:border-box;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  "
+>
+  <!-- 左ペイン：エディタ + ボタン -->
   <section
-    style="flex:0 0 38%; min-width:300px; border-right:1px solid #ddd; display:flex; flex-direction:column;"
+    style="
+      flex:0 0 38%;
+      min-width:300px;
+      border-right:1px solid #ddd;
+      display:flex;
+      flex-direction:column;
+    "
   >
-    <div style="display:flex; gap:8px; align-items:center; padding:8px;">
+    <div
+      style="
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        align-items:center;
+        padding:8px;
+      "
+    >
       <button
         on:click={update}
+        disabled={isLayouting}
         style="padding:6px 10px; border:1px solid #ccc; border-radius:6px; cursor:pointer;"
       >
-        Apply
+        {isLayouting ? 'レイアウト中…' : 'Apply'}
       </button>
 
       <button
-        on:click={downloadDrawioXml}
+        on:click={downloadScreenSVG}
         style="padding:6px 10px; border:1px solid #ccc; border-radius:6px; cursor:pointer;"
       >
-        Download draw.io XML
+        Screen SVG
       </button>
 
       <button
-        on:click={downloadSVG}
+        on:click={downloadGraphvizSvg}
         style="padding:6px 10px; border:1px solid #ccc; border-radius:6px; cursor:pointer;"
       >
-        Download SVG
+        Graphviz SVG
+      </button>
+
+      <button
+        on:click={downloadGraphvizPng}
+        style="padding:6px 10px; border:1px solid #ccc; border-radius:6px; cursor:pointer;"
+      >
+        Graphviz PNG
+      </button>
+
+      <button
+        on:click={downloadPptx}
+        disabled={!laidOut}
+        style="padding:6px 10px; border:1px solid #ccc; border-radius:6px; cursor:pointer;"
+      >
+        PPTX
       </button>
     </div>
+
     <div style="flex:1; min-height:0;">
       <Editor bind:value={src} />
     </div>

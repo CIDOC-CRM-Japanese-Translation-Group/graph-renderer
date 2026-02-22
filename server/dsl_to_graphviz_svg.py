@@ -95,10 +95,11 @@ def graph_to_dot(graph: Dict[str, Any]) -> str:
     エッジ:
       - A -> B で、矢印は TABLE の外接矩形（箱）にくっつく
     """
+    jp_font = "Noto Sans CJK JP"
     lines: List[str] = []
     lines.append("digraph G {")
-    lines.append('  graph [rankdir=LR];')
-    lines.append('  node [shape=plaintext, margin="0,0"];')
+    lines.append(f'  graph [rankdir=LR, charset="UTF-8", fontname="{jp_font}"];')
+    lines.append(f'  node [shape=plaintext, margin="0,0", fontname="{jp_font}"];')
 
     for n in graph["nodes"]:
         node_id = n["id"]
@@ -116,13 +117,13 @@ def graph_to_dot(graph: Dict[str, Any]) -> str:
       <TR>
         <!-- 四辺全部: 外枠 + 中央線の上側 -->
         <TD CELLPADDING="3" SIDES="TLRB">
-          <FONT POINT-SIZE="11">{top_text}</FONT>
+          <FONT FACE="{jp_font}" POINT-SIZE="11">{top_text}</FONT>
         </TD>
       </TR>
       <TR>
         <!-- 下＋左右: 外枠の下＋側面。中央線は上段セルの B 側が担当 -->
         <TD CELLPADDING="3" SIDES="BLR">
-          <FONT POINT-SIZE="13">{bottom_text}</FONT>
+          <FONT FACE="{jp_font}" POINT-SIZE="13">{bottom_text}</FONT>
         </TD>
       </TR>
     </TABLE>
@@ -135,7 +136,7 @@ def graph_to_dot(graph: Dict[str, Any]) -> str:
     <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
       <TR>
         <TD CELLPADDING="4">
-          <FONT POINT-SIZE="12">{top_text}</FONT>
+          <FONT FACE="{jp_font}" POINT-SIZE="12">{top_text}</FONT>
         </TD>
       </TR>
     </TABLE>
