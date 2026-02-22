@@ -39,6 +39,12 @@
   const nextDy = () => (labelIdx++ % 2 === 0 ? -8 : 14);
   $: if (laidOut) labelIdx = 0;
 
+  const _lc = document.createElement('canvas').getContext('2d')!;
+  function labelWidth(text: string): number {
+    _lc.font = '14px system-ui';
+    return Math.max(120, Math.ceil(_lc.measureText(text).width) + 16);
+  }
+
   // ===== Export: SVG をそのまま文字列化 =====
   export function toSVGString(): string {
     if (!svgEl) return '';
@@ -78,7 +84,7 @@
   bind:this={svgEl}
   viewBox="-200 -200 3000 2000"
   style="width:100%;height:100%;background:#f7f7f7; touch-action:none;"
-  on:wheel|passive={onWheel}
+  on:wheel={onWheel}
   on:mousedown={onDown}
   on:mousemove={onMove}
   on:mouseup={onUp}
@@ -123,7 +129,8 @@
                 {@const mx = (s.startPoint.x + s.endPoint.x) / 2}
                 {@const my = (s.startPoint.y + s.endPoint.y) / 2}
                 {@const dy = nextDy()}
-                <rect x={mx - 60} y={my - 16 + dy} width="120" height="20" rx="3" ry="3" fill="white" opacity="0.92"/>
+                {@const lw = labelWidth(e.labels[0].text)}
+                <rect x={mx - lw/2} y={my - 16 + dy} width={lw} height="20" rx="3" ry="3" fill="white" opacity="0.92"/>
                 <text x={mx} y={my - 2 + dy} font-size="14" text-anchor="middle" fill="#333">
                   {e.labels[0].text}
                 </text>
