@@ -1,0 +1,14 @@
+[Unit]
+Description=crmviz FastAPI server (graph-renderer backend)
+After=network.target
+
+[Service]
+Type=simple
+User=kameda
+WorkingDirectory=/var/www/html/projects/cidoc/graph-renderer/server
+ExecStart=/home/kameda/.local/bin/uvicorn api:app --host 127.0.0.1 --port 8001
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
