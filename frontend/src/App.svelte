@@ -99,51 +99,6 @@ E22 -> E55 : P2 has type
     }
   }
 
-  // 4. PPTX（独自実装・Python 側 graph_to_pptx 用 JSON に整形）
-  async function downloadPptx() {
-    if (!laidOut) return;
-
-    // Python 側 sample.json の形式に合わせる:
-    // {
-    //   nodes: [{id, label, x, y, width, height}, ...],
-    //   edges: [{from, to, label}, ...]
-    // }
-    const pptxGraph = {
-      nodes: (laidOut.nodes ?? []).map((n: any) => ({
-        id: n.id,
-        label: n.bottom ? `${n.top} | ${n.bottom}` : n.top,
-        x: n.x,
-        y: n.y,
-        width: n.w,
-        height: n.h
-      })),
-      edges: (graph.edges ?? []).map((e: any) => ({
-        from: e.from,
-        to: e.to,
-        label: e.label
-      }))
-    };
-
-    try {
-      const res = await fetch(`${API_BASE}/pptx`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pptxGraph)
-      });
-      if (!res.ok) {
-        console.error('PPTX error', await res.text());
-        return;
-      }
-      const blob = await res.blob();
-      triggerDownload(
-        blob,
-        'cidoc-graph.pptx'
-      );
-    } catch (e) {
-      console.error('PPTX error', e);
-    }
-  }
-
   onMount(() => {
     update();
   });
@@ -207,13 +162,6 @@ E22 -> E55 : P2 has type
         Graphviz PNG
       </button>
 
-      <button
-        on:click={downloadPptx}
-        disabled={!laidOut}
-        style="padding:6px 10px; border:1px solid #ccc; border-radius:6px; cursor:pointer;"
-      >
-        PPTX
-      </button>
     </div>
 
     <div style="flex:1; min-height:0;">

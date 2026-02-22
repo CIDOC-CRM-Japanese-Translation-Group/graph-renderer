@@ -1,12 +1,11 @@
 # api.py
 from __future__ import annotations
 
-import io
 from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from graphviz import Source
@@ -14,20 +13,10 @@ from graphviz import Source
 # 既存の変換ロジックをインポート
 # - graph_to_pptx.py: graph_json_to_pptx(graph: dict, output_path: str) or bytes を返す関数がある想定
 # - dsl_to_graphviz_svg.py: parse_dsl(), graph_to_dot() がある想定
-from graph_to_pptx import graph_json_to_pptx
 from dsl_to_graphviz_svg import parse_dsl, graph_to_dot
 
 
 # ===================== Pydantic モデル =====================
-
-class GraphModel(BaseModel):
-    """
-    Svelte 側の laidOut をそのまま突っ込めるように
-    nodes / edges を「なんでも dict」にしておく。
-    """
-    nodes: List[Dict[str, Any]]
-    edges: List[Dict[str, Any]]
-
 
 class GraphvizRequest(BaseModel):
     """
@@ -50,35 +39,6 @@ app.add_middleware(
 )
 
 
-# ===================== ヘルパー: pptx 変換 =====================
-
-def make_pptx_bytes(graph: Dict[str, Any]) -> bytes:
-    """
-    既存の graph_json_to_pptx() を使って PPTX バイト列を返すヘルパー。
-
-    graph_to_pptx.py 側の実装に応じて、ここだけ調整してください。
-    - パターンA: graph_json_to_pptx(graph, output_path) のように「ファイルに保存」する関数なら
-      一時ファイルを作ってそこに保存→読み込み→bytes 返す。
-    - パターンB: graph_json_to_pptx(graph) が bytes を返す実装にしてしまうなら、
-      そのまま返す。
-    """
-    # ---- パターンA: ファイルパスを渡す実装の場合 ----
-    import tempfile
-    from pathlib import Path
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        out_path = Path(tmpdir) / "graph.pptx"
-        # ここはあなたの graph_to_pptx.py のシグネチャに合わせてください
-        # 例: graph_json_to_pptx(graph, str(out_path))
-        graph_json_to_pptx(graph, str(out_path))
-
-        data = out_path.read_bytes()
-        return data
-
-    # ---- パターンB: bytes を返す実装なら ----
-    # return graph_json_to_pptx(graph)
-
-
 # ===================== ヘルパー: Graphviz SVG 変換 =====================
 
 def dsl_to_svg_bytes(dsl: str) -> bytes:
@@ -94,42 +54,6 @@ def dsl_to_svg_bytes(dsl: str) -> bytes:
 
 
 # ===================== エンドポイント =====================
-
-@app.post("/api/pptx")
-def api_generate_pptx(graph: GraphModel):
-    """
-    laidOut graph JSON → PowerPoint (pptx)
-
-    リクエスト:
-      POST /api/pptx
-      Content-Type: application/json
-
-      {
-        "nodes": [...],
-        "edges": [...]
-      }
-
-    レスポンス:
-      Content-Type: application/vnd.openxmlformats-officedocument.presentationml.presentation
-      (添付ファイルとしてダウンロード)
-    """
-    try:
-        pptx_bytes = make_pptx_bytes(graph.dict())
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PPTX生成中にエラー: {e}")
-
-    # ストリーミングレスポンスで返す
-    filename = "cidoc-graph.pptx"
-    return StreamingResponse(
-        io.BytesIO(pptx_bytes),
-        media_type=(
-            "application/vnd.openxmlformats-officedocument."
-            "presentationml.presentation"
-        ),
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
-        },
-    )
 
 @app.post("/api/graphviz/png")
 def api_graphviz_png(req: GraphvizRequest):
