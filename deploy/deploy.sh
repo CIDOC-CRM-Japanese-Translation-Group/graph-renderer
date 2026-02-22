@@ -23,10 +23,13 @@ sudo systemctl start crmviz-api
 sudo systemctl status crmviz-api
 
 echo "=== 4. nginx の設定 ==="
-echo "以下を既存の server ブロックに追加してください:"
-echo "  include $DEPLOY_DIR/nginx-graph-renderer.conf;"
+sudo cp "$DEPLOY_DIR/nginx-graph-renderer.conf" /etc/nginx/snippets/graph-renderer.conf
+echo "snippet を配置しました: /etc/nginx/snippets/graph-renderer.conf"
 echo ""
-echo "または手動で nginx.conf / sites-enabled に location ブロックを追記後:"
+echo "既存の server ブロック（sites-enabled/default）に以下を追記してください:"
+echo "  include /etc/nginx/snippets/graph-renderer.conf;"
+echo ""
+echo "追記後:"
 echo "  sudo nginx -t && sudo systemctl reload nginx"
 
 echo ""
